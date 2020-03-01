@@ -34,10 +34,6 @@ object MyModule {
     acc
   }
 
-  // Exercise 1: Write a function to compute the nth fibonacci number
-
-  def fib(n: Int): Int = ???
-
   // This definition and `formatAbs` are very similar..
   private def formatFactorial(n: Int) = {
     val msg = "The factorial of %d is %d."
@@ -49,6 +45,18 @@ object MyModule {
   def formatResult(name: String, n: Int, f: Int => Int) = {
     val msg = "The %s of %d is %d."
     msg.format(name, n, f(n))
+  }
+
+  // Exercise 1: Write a function to compute the nth fibonacci number
+
+  def fib(n: Int): Int = {
+    @annotation.tailrec
+    def go(n: Int, prev: Int, curr: Int): Int = {
+      if(n <= 0) prev
+      else go(n - 1, curr, prev + curr)
+    }
+
+    go(n, 0, 1)
   }
 }
 
