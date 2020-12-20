@@ -198,7 +198,7 @@ object PolymorphicFunctions {
   // Exercise 5: Implement `compose`
 
   def compose[A, B, C](f: B => C, g: A => B): A => C =
-    ???
+    (a: A) => f(g(a))
 
   def gt(a: Int, b: Int): Boolean = b > a
 
@@ -210,6 +210,8 @@ object PolymorphicFunctions {
 
   def uncurriedAdd(a: Int, b: Int): Int = uncurry[Int, Int, Int](curriedAdd)(a, b)
 
+  def addSubtract(a: Int): Int = compose[Int, Int, Int](_ + 2, _ - 2)(a)
+
   def main(args: Array[String]): Unit = {
     val ordered = Array.range(1, 5)
     val unordered = Array.range(5, 1, -1)
@@ -220,6 +222,7 @@ object PolymorphicFunctions {
     println(concat("Hello ")("World"))
     println(curriedAdd(1)(2))
     println(uncurriedAdd(1, 2))
+    println(addSubtract(10))
     println("All good :)")
   }
 }
