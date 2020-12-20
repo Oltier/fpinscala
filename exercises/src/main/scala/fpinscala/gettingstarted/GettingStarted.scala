@@ -177,7 +177,7 @@ object PolymorphicFunctions {
   // Note that `=>` associates to the right, so we could
   // write the return type as `A => B => C`
   def curry[A, B, C](f: (A, B) => C): A => (B => C) =
-    ???
+    (a: A) => (b: B) => f(a, b)
 
   // NB: The `Function2` trait has a `curried` method already
 
@@ -206,6 +206,8 @@ object PolymorphicFunctions {
     partial1[String, String, String](s, _ + _)
   }
 
+  def add(i: Int): Int => Int = curry[Int, Int, Int](_ + _)(i)
+
   def main(args: Array[String]): Unit = {
     val ordered = Array.range(1, 5)
     val unordered = Array.range(5, 1, -1)
@@ -214,6 +216,7 @@ object PolymorphicFunctions {
     assert(isSorted(oneElement, gt))
     assert(!isSorted(unordered, gt))
     println(concat("Hello ")("World"))
+    println(add(1)(2))
     println("All good :)")
   }
 }
