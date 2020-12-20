@@ -183,7 +183,7 @@ object PolymorphicFunctions {
 
   // Exercise 4: Implement `uncurry`
   def uncurry[A, B, C](f: A => B => C): (A, B) => C =
-    ???
+    (a, b) => f(a)(b)
 
   /*
   NB: There is a method on the `Function` object in the standard library,
@@ -206,7 +206,9 @@ object PolymorphicFunctions {
     partial1[String, String, String](s, _ + _)
   }
 
-  def add(i: Int): Int => Int = curry[Int, Int, Int](_ + _)(i)
+  def curriedAdd(i: Int): Int => Int = curry[Int, Int, Int](_ + _)(i)
+
+  def uncurriedAdd(a: Int, b: Int): Int = uncurry[Int, Int, Int](curriedAdd)(a, b)
 
   def main(args: Array[String]): Unit = {
     val ordered = Array.range(1, 5)
@@ -216,7 +218,8 @@ object PolymorphicFunctions {
     assert(isSorted(oneElement, gt))
     assert(!isSorted(unordered, gt))
     println(concat("Hello ")("World"))
-    println(add(1)(2))
+    println(curriedAdd(1)(2))
+    println(uncurriedAdd(1, 2))
     println("All good :)")
   }
 }
