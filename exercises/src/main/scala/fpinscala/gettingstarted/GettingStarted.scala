@@ -202,6 +202,10 @@ object PolymorphicFunctions {
 
   def gt(a: Int, b: Int): Boolean = b > a
 
+  def concat(s: String): String => String = {
+    partial1[String, String, String](s, _ + _)
+  }
+
   def main(args: Array[String]): Unit = {
     val ordered = Array.range(1, 5)
     val unordered = Array.range(5, 1, -1)
@@ -209,6 +213,7 @@ object PolymorphicFunctions {
     assert(isSorted(ordered, gt))
     assert(isSorted(oneElement, gt))
     assert(!isSorted(unordered, gt))
+    println(concat("Hello ")("World"))
     println("All good :)")
   }
 }
