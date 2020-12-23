@@ -142,6 +142,16 @@ object Stream {
     case Some((h, s)) => cons(h, unfold(s)(f))
     case None => empty
   }
+
+  def onesViaUnfold: Stream[Int] = unfold(1)(_ => Some((1, 1)))
+
+  def constantViaUnfold[A](a: A): Stream[A] =
+    unfold(a)(_ => Some(a, a))
+
+  def fromViaUnfold(n: Int): Stream[Int] =
+    unfold(n)(h => Some(h, h + 1))
+  def fibsViaUnfold: Stream[Int] =
+    unfold[Int,(Int, Int)]((0, 1))(f => Some(f._1, (f._2, f._1 + f._2)))
 }
 
 object Laziness extends App {
@@ -151,13 +161,20 @@ object Laziness extends App {
     println(s.takeWhile(i => i < 10).toList)
     println(s.takeWhile2(i => i < 10).toList)
 
-    println(Stream.ones.take(5).toList)
     println(Stream.ones.exists(_ % 2 != 0))
     println(Stream.ones.map(_ + 1).exists(_ % 2 == 0))
     println(Stream.ones.takeWhile(_ == 1))
     println(Stream.ones.forAll(_ != 1))
-    println(Stream.constant(2).take(5).toList)
     println(Stream.from(5).take(5).toList)
     println(Stream.fibs.take(5).toList)
+    println(Stream.ones.take(5).toList)
+    println(Stream.onesViaUnfold.take(5).toList)
+    println(Stream.constant(2).take(5).toList)
+    println(Stream.constantViaUnfold(2).take(5).toList)
+    println(Stream.from(5).take(5).toList)
+    println(Stream.fromViaUnfold(5).take(5).toList)
+    println(Stream.fibs.take(5).toList)
+    println(Stream.fibsViaUnfold.take(5).toList)
+
   }
 }
