@@ -103,6 +103,45 @@ trait Stream[+A] {
     case Cons(h, t) => h() :: t().toList2
     case _ => List()
   }
+
+  def mapViaUnfold[B](f: A => B): Stream[B] =
+    unfold(this) {
+      case Cons(h, t) => Some(f(h()), t())
+      case _ => None
+    }
+
+  def takeViaUnfold(n: Int): Stream[A] =
+    unfold((this, n)) {
+      case (Cons(h, _), 1) => Some((h(), (empty, 0)))
+      case (Cons(h, t), n) => Some((h(), (t(), n - 1)))
+      case _ => None
+    }
+
+  def takeWhileViaUnfold(p: A => Boolean): Stream[A] =
+    unfold(this) {
+      case Cons(h, t) if p(h()) => Some(h(), t())
+      case _ => None
+    }
+
+  def zipWith[B, C](s2: Stream[B])(f: (A, B) => C): Stream[C] =
+    unfold((this, s2)) {
+      case (Cons(h1, t1), Cons(h2, t2)) => Some(f(h1(), h2()), (t1(), t2()))
+      case _ => None
+    }
+
+  def zip[B](s2: Stream[B]): Stream[(A, B)] =
+    zipWith(s2)((_,_))
+
+  def zipWithAll[B, C](s2: Stream[B])(f: (Option[A], Option[B]) => C): Stream[C] =
+    unfold((this, s2)) {
+      case (Cons(h1, t1), Empty) => Some(f(Some(h1()), None), (t1(), empty[B]))
+      case (Empty, Cons(h2, t2)) => Some(f(None, Some(h2())), (empty[A], t2()))
+      case (Cons(h1, t1), Cons(h2, t2)) => Some(f(Some(h1()), Some(h2())), (t1(), t2()))
+      case _ => None
+    }
+
+  def zipAll[B](s2: Stream[B]): Stream[(Option[A], Option[B])] =
+    zipWithAll(s2)((_,_))
 }
 
 case object Empty extends Stream[Nothing]
@@ -175,6 +214,7 @@ object Laziness extends App {
     println(Stream.fromViaUnfold(5).take(5).toList)
     println(Stream.fibs.take(5).toList)
     println(Stream.fibsViaUnfold.take(5).toList)
+    println(Stream.fibsViaUnfold.takeViaUnfold(5).toList)
 
   }
 }
