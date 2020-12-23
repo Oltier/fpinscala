@@ -36,12 +36,12 @@ trait Stream[+A] {
 
   def drop(n: Int): Stream[A] = ???
 
-  def takeWhile(p: A => Boolean): Stream[A] = this match {
+  def takeWhile2(p: A => Boolean): Stream[A] = this match {
     case Cons(h, t) if p(h()) => cons(h(), t() takeWhile p)
     case _ => empty
   }
 
-  def takeWhile2(p: A => Boolean): Stream[A] =
+  def takeWhile(p: A => Boolean): Stream[A] =
     foldRight[Stream[A]](empty)(
       (h, t) =>
         if (p(h))
@@ -54,6 +54,22 @@ trait Stream[+A] {
 
   // 5.7 map, filter, append, flatmap using foldRight. Part of the exercise is
   // writing your own function signatures.
+  def map[B](f: A => B): Stream[B] =
+    foldRight(empty[B])((h, t) => cons(f(h), t))
+
+  def filter(p: A => Boolean): Stream[A] =
+    foldRight(empty[A])((h, t) =>
+      if(p(h))
+        cons(h, t)
+      else
+        t
+    )
+
+  def append[B>:A](s: Stream[B]): Stream[B] =
+    foldRight(s)((h, t) => cons(h, t))
+
+  def flatMap[B](f: A => Stream[B]): Stream[B] =
+    foldRight(empty[B])((h, t) => f(h) append t)
 
   def startsWith[B](s: Stream[B]): Boolean = ???
 
@@ -107,9 +123,25 @@ object Stream {
 
   val ones: Stream[Int] = Stream.cons(1, ones)
 
-  def from(n: Int): Stream[Int] = ???
+//  def constant[A](a: A): Stream[A] = Stream.cons(a, constant(a))
+  def constant[A](a: A): Stream[A] = {
+    lazy val tail: Stream[A] = Cons(() => a, () => tail)
+    tail
+  }
 
-  def unfold[A, S](z: S)(f: S => Option[(A, S)]): Stream[A] = ???
+  def from(n: Int): Stream[Int] = cons(n, from(n + 1))
+
+  def fibs: Stream[Int] = {
+    def go(f0: Int, f1: Int): Stream[Int] = {
+      cons(f0, go(f1, f0 + f1))
+    }
+    go(0, 1)
+  }
+
+  def unfold[A, S](z: S)(f: S => Option[(A, S)]): Stream[A] = f(z) match {
+    case Some((h, s)) => cons(h, unfold(s)(f))
+    case None => empty
+  }
 }
 
 object Laziness extends App {
@@ -118,5 +150,14 @@ object Laziness extends App {
     println(s.toList)
     println(s.takeWhile(i => i < 10).toList)
     println(s.takeWhile2(i => i < 10).toList)
+
+    println(Stream.ones.take(5).toList)
+    println(Stream.ones.exists(_ % 2 != 0))
+    println(Stream.ones.map(_ + 1).exists(_ % 2 == 0))
+    println(Stream.ones.takeWhile(_ == 1))
+    println(Stream.ones.forAll(_ != 1))
+    println(Stream.constant(2).take(5).toList)
+    println(Stream.from(5).take(5).toList)
+    println(Stream.fibs.take(5).toList)
   }
 }
