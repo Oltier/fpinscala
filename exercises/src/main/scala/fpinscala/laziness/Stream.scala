@@ -34,7 +34,10 @@ trait Stream[+A] {
     case _ => empty
   }
 
-  def drop(n: Int): Stream[A] = ???
+  def drop(n: Int): Stream[A] = this match {
+    case Cons(_, t) if n > 0 => t() drop n-1
+    case _ => this
+  }
 
   def takeWhile2(p: A => Boolean): Stream[A] = this match {
     case Cons(h, t) if p(h()) => cons(h(), t() takeWhile p)
@@ -70,8 +73,6 @@ trait Stream[+A] {
 
   def flatMap[B](f: A => Stream[B]): Stream[B] =
     foldRight(empty[B])((h, t) => f(h) append t)
-
-  def startsWith[B](s: Stream[B]): Boolean = ???
 
   def toList: List[A] = {
     val buf = ListBuffer[A]()
@@ -142,6 +143,29 @@ trait Stream[+A] {
 
   def zipAll[B](s2: Stream[B]): Stream[(Option[A], Option[B])] =
     zipWithAll(s2)((_,_))
+
+  def startsWith[B>:A](s2: Stream[B]): Boolean =
+    zipAll(s2)
+      .takeWhileViaUnfold(_._2.isDefined)
+      .forAll(t => t._1 == t._2)
+
+  def tails: Stream[Stream[A]] =
+    unfold(this) {
+      case Empty => None
+      case s => Some(s, s drop 1)
+    } append empty
+
+  def hasSubsequence[B>:A](s2: Stream[B]): Boolean =
+    tails exists (_ startsWith s2)
+
+  def scanRight[B](z: B)(f: (A, => B) => B): Stream[B] =
+    foldRight((z, Stream(z))) { (acc, p0) =>
+      lazy val p1 = p0
+      val h: B = p1._1
+      val s: Stream[B] = p1._2
+      val newAcc = f(acc, h)
+      (newAcc, cons(newAcc, s))
+    }._2
 }
 
 case object Empty extends Stream[Nothing]
@@ -216,5 +240,9 @@ object Laziness extends App {
     println(Stream.fibsViaUnfold.take(5).toList)
     println(Stream.fibsViaUnfold.takeViaUnfold(5).toList)
 
+    val s2 = Stream(1, 2, 3)
+    println(s2.startsWith(Stream(1,2)))
+    println(s2.tails.toList.map(_.toList))
+    println(s2.scanRight(0)(_ + _).toList)
   }
 }
