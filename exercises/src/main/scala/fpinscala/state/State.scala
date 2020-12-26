@@ -1,6 +1,6 @@
 package fpinscala.state
 
-import fpinscala.state.RNG.{Rand, double, ints, ints2, nonNegativeInt}
+import fpinscala.state.RNG.{Rand, double, ints, ints2, nonNegativeInt, sequence}
 
 import scala.annotation.tailrec
 
@@ -122,8 +122,10 @@ case class State[S,+A](run: S => (A, S)) {
   import fpinscala.state.State._
   def map[B](f: A => B): State[S, B] =
     flatMap(a => unit(f(a)))
+
   def map2[B,C](sb: State[S, B])(f: (A, B) => C): State[S, C] =
     flatMap(a => sb.map(b => f(a, b)))
+
   def flatMap[B](f: A => State[S, B]): State[S, B] =
     State(
       s => {
@@ -149,7 +151,30 @@ object State {
   def sequence[S,A](sas: List[State[S,A]]): State[S, List[A]] =
     sas.reverse.foldLeft(unit[S, List[A]](List.empty[A]))((acc, s) => s.map2(acc)(_ :: _))
 
-  def simulateMachine(inputs: List[Input]): State[Machine, (Int, Int)] = ???
+  def get[S]: State[S, S] = State(s => (s, s))
+
+  def set[S](s: S): State[S, Unit] = State(_ => ((), s))
+
+  def modify[S](f: S => S): State[S, Unit] = for {
+    s <- get
+    _ <- set(f(s))
+  } yield ()
+
+  def update: Input => Machine => Machine = (i: Input) => (s: Machine) =>
+    (i, s) match {
+      case (Coin, Machine(true, candies, coins)) =>
+        Machine(locked = false, candies, coins + 1)
+      case (Turn, Machine(false, candies, coins)) =>
+        Machine(locked = true, candies - 1, coins)
+      case (Turn, Machine(true, _, _)) => s
+      case (Coin, Machine(false, _, _)) => s
+      case (_, Machine(_, 0, _)) => s
+    }
+
+  def simulateMachine(inputs: List[Input]): State[Machine, (Int, Int)] = for {
+    _ <- sequence(inputs.map(modify[Machine] _ compose update))
+    s <- get
+  } yield (s.coins, s.candies)
 }
 
 object Stateness extends App {
@@ -161,5 +186,9 @@ object Stateness extends App {
     println(double(rng))
     println(ints(5)(rng)._1)
     println(ints2(5)(rng)._1)
+    val buyOne: List[Input] = List(Coin, Turn)
+    val inputs: List[Input] = List.fill(4)(buyOne).flatten
+    val machine1 = Machine(locked = true, 5, 10)
+    println(State.simulateMachine(inputs).run(machine1)._1)
   }
 }
